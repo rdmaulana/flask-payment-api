@@ -87,9 +87,20 @@ def transfer():
     from app.tasks.transfer import transfer_process
 
     user = get_jwt_identity()
-    data = request.get_json()
-    
-    task = transfer_process.delay(user, data)
-    if task:
-        return jsonify({'message': 'SUCCESS'}), 200
+    get_user = mongo.db.users.find_one({'phone_number': user['phone_number']})
+
+    data = validate_transfer(request.get_json())
+    if data['ok']:
+        data = data['data']
+        data['transfer_id'] = str(uuid.uuid4())
+        data['from_user_id'] = get_user['user_id']
+        data['balance_before'] = get_user['balance']
+        data['balance_after'] = data['balance_before'] - data['amount']
+        data['created_date'] = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        
+        if get_user['balance'] >= data['amount']:
+            ## Adding to the task job
+            transfer_process.delay(user, data)
+            return response_transfer('SUCCESS', data, 200)
+        return jsonify({'message': 'Balance is not enough'}), 400
     return jsonify({'message': 'Unauthenticated'}), 401
