@@ -7,7 +7,7 @@ from flask_jwt_extended import (
     jwt_required,
     get_jwt_identity
 )
-from app import app, mongo, bcrypt, jwt
+from app import mongo, bcrypt, jwt
 from app.schemas.user import validate_user
 
 from app.helpers.user import ( 
@@ -53,6 +53,7 @@ def login():
         data = data['data']
         user = mongo.db.users.find_one({'phone_number': data['phone_number']})
         if user and data['pin'] == user['pin']:
+            data['user_id'] = user['user_id']
             access_token = create_access_token(identity=data)
             refresh_token = create_refresh_token(identity=data)
             user['token'] = access_token

@@ -13,6 +13,8 @@ class BaseConfig(object):
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(days=1)
     MONGO_URI = os.environ['DATABASE_URL']
     REDISTOGO_URL = os.environ['REDIS_URL']
+    CELERY_BROKER_URL = os.environ['CELERY_BROKER_URL']
+    CELERY_RESULT_BACKEND = os.environ['CELERY_RESULT_BACKEND']
     CSRF_ENABLED = True
     BCRYPT_HASH_PREFIX = 14
     BCRYPT_LOG_ROUNDS = 12

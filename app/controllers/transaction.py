@@ -4,7 +4,7 @@ import uuid
 from flask import request, jsonify, Blueprint
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from bson.objectid import ObjectId
-from app import app, mongo, q
+from app import mongo
 from app.schemas.transaction import validate_topup, validate_payment, validate_transfer
 from app.helpers.transaction import (
     response_topup, 
@@ -19,8 +19,7 @@ transaction = Blueprint('transaction', __name__)
 @jwt_required()
 def history_transactions():
     user = get_jwt_identity()
-    get_user = mongo.db.users.find_one({'phone_number': user['phone_number']})
-    transactions = mongo.db.transactions.find({'user_id': get_user['user_id']}, {'_id':0})
+    transactions = mongo.db.transactions.find({'user_id': user['user_id']}, {'_id':0})
     if transactions:
         return response_history_transaction('SUCCESS', list(transactions), 200)
     return jsonify({'Unauthenticated'}), 401
@@ -82,47 +81,15 @@ def pay():
         return jsonify({'message': 'Balance is not enough'}), 400
     return jsonify({'message': 'Unauthenticated'}), 401
 
-def transfer_process(user, payload):
-    get_user = mongo.db.users.find_one({'phone_number': user['phone_number']})
-    data = validate_transfer(payload)
-    if data['ok']:
-        data = data['data']
-        data['transfer_id'] = str(uuid.uuid4())
-        data['from_user_id'] = get_user['user_id']
-        data['balance_before'] = get_user['balance']
-        data['balance_after'] = data['balance_before'] - data['amount']
-        data['created_date'] = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        get_target_user = mongo.db.users.find_one({'user_id': data['target_user']})
-
-        if get_user['balance'] >= data['amount']:
-            try:
-                transfer = mongo.db.transactions.insert_one(data)
-                if transfer:
-                    mongo.db.users.update_one(
-                        {'user_id': get_user['user_id']},
-                        {'$set': {'balance': data['balance_after']}}
-                    ) 
-                    mongo.db.users.update_one(
-                        {'user_id': data['target_user']},
-                        {'$set': {'balance': get_target_user['balance'] + data['amount']}}
-                    )
-            except Exception as e:
-                print(e)
-            return response_transfer('SUCCESS', data, 200)
-        return jsonify({'message': 'Balance is not enough'}), 400
-    return jsonify({'message': 'Unauthenticated'}), 401
-
 @transaction.route("/transfer", methods=["POST"])
 @jwt_required()
 def transfer():
-    from app.controllers.transaction import transfer_process
+    from app.tasks.transfer import transfer_process
 
     user = get_jwt_identity()
     data = request.get_json()
     
-    job = q.enqueue_call(
-        func=transfer_process, args=(user, data), result_ttl=5000
-    )
-    if job:
+    task = transfer_process.delay(user, data)
+    if task:
         return jsonify({'message': 'SUCCESS'}), 200
     return jsonify({'message': 'Unauthenticated'}), 401

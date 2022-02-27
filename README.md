@@ -14,9 +14,9 @@ pip install -r requirements.txt
 
 Create .env file and setup the requirements based on .env.example
 
-Run worker server
+Run celery worker
 ```bash
-python worker.py
+celery --app app.tasks worker --loglevel=info -E
 ```
 
 Run application

@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask import Blueprint, jsonify, request
-from app import app, mongo
+from app import mongo
 from app.helpers.profile import response_profile
 from flask_jwt_extended import jwt_required, get_current_user, get_jwt_identity
 from app.schemas.profile import validate_profile_update
