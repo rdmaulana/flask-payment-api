@@ -50,24 +50,6 @@ def initialize_extensions(app):
     mongo.init_app(app)
     jwt.init_app(app)
     bcrypt.init_app(app)
-    # celery(app.name, broker=app.config['CELERY_BROKER_URL'])
-    # celery.conf.update(app.config)
-
-# def make_celery(app):
-#     celery = Celery(
-#         app.import_name,
-#         backend=app.config['CELERY_RESULT_BACKEND'],
-#         broker=app.config['CELERY_BROKER_URL']
-#     )
-#     celery.conf.update(app.config)
-
-#     class ContextTask(celery.Task):
-#         def __call__(self, *args, **kwargs):
-#             with app.app_context():
-#                 return self.run(*args, **kwargs)
-
-#     celery.Task = ContextTask
-#     return celery
 
 def register_blueprints(app):
     from app.views import route_not_found, method_not_found, internal_server_error, bad_request

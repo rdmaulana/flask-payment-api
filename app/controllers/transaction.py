@@ -100,7 +100,7 @@ def transfer():
         
         if get_user['balance'] >= data['amount']:
             ## Adding to the task job
-            transfer_process.delay(user, data)
+            transfer_process.delay(data)
             return response_transfer('SUCCESS', data, 200)
         return jsonify({'message': 'Balance is not enough'}), 400
     return jsonify({'message': 'Unauthenticated'}), 401

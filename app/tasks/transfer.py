@@ -2,7 +2,7 @@ from app import mongo, create_app
 from app.tasks import celery
 
 @celery.task
-def transfer_process(user, payload):
+def transfer_process(payload):
     flask_app = create_app()
     with flask_app.app_context():
         get_target_user = mongo.db.users.find_one({'user_id': payload['target_user']})
